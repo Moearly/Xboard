@@ -467,4 +467,44 @@ class Server extends Model
         
         return $matchedRange ? (float) $matchedRange['rate'] : (float) $this->rate;
     }
+
+    /**
+     * 节点所属的租户
+     */
+    public function tenants()
+    {
+        return $this->belongsToMany(Tenant::class, 'tenant_server')
+            ->withPivot('is_active')
+            ->withTimestamps();
+    }
+
+    /**
+     * 检查节点是否分配给指定租户
+     */
+    public function isAssignedToTenant($tenantId)
+    {
+        return $this->tenants()
+            ->where('tenant_id', $tenantId)
+            ->wherePivot('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * 限制查询只返回当前租户的节点
+     */
+    public function scopeForTenant($query, $tenantId = null)
+    {
+        if (!$tenantId && app()->has('currentTenant')) {
+            $tenantId = app('currentTenant')->id;
+        }
+
+        if ($tenantId) {
+            return $query->whereHas('tenants', function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId)
+                  ->where('tenant_server.is_active', true);
+            });
+        }
+
+        return $query;
+    }
 }

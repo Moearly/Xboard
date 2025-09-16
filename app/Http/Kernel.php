@@ -75,6 +75,8 @@ class Kernel extends HttpKernel
         'staff' => \App\Http\Middleware\Staff::class,
         'log' => \App\Http\Middleware\RequestLog::class,
         'server' => \App\Http\Middleware\Server::class,
+        'tenant' => \App\Http\Middleware\TenantIdentification::class,
+        'super_admin' => \App\Http\Middleware\SuperAdmin::class,
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
     ];

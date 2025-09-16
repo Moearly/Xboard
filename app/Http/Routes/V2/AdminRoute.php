@@ -18,6 +18,8 @@ use App\Http\Controllers\V2\Admin\PaymentController;
 use App\Http\Controllers\V2\Admin\SystemController;
 use App\Http\Controllers\V2\Admin\ThemeController;
 use App\Http\Controllers\V2\Admin\TrafficResetController;
+use App\Http\Controllers\V2\Admin\TenantController;
+use App\Http\Controllers\V2\Admin\TenantBillingController;
 use Illuminate\Contracts\Routing\Registrar;
 
 class AdminRoute
@@ -268,6 +270,70 @@ class AdminRoute
                 $router->get('stats', [TrafficResetController::class, 'stats']);
                 $router->get('user/{userId}/history', [TrafficResetController::class, 'userHistory']);
                 $router->post('reset-user', [TrafficResetController::class, 'resetUser']);
+            });
+
+            // 租户管理（仅超级管理员可访问）
+            $router->group([
+                'prefix' => 'tenant',
+                'middleware' => 'super_admin'
+            ], function ($router) {
+                $router->get('/fetch', [TenantController::class, 'index']);
+                $router->post('/save', [TenantController::class, 'store']);
+                $router->get('/detail/{id}', [TenantController::class, 'show']);
+                $router->post('/update/{id}', [TenantController::class, 'update']);
+                $router->post('/drop/{id}', [TenantController::class, 'destroy']);
+                $router->post('/toggle-status/{id}', [TenantController::class, 'toggleStatus']);
+                $router->get('/statistics/{id}', [TenantController::class, 'statistics']);
+                
+                // 节点分配
+                $router->get('/servers/{id}', [TenantController::class, 'getServers']);
+                $router->post('/servers/{id}', [TenantController::class, 'updateServers']);
+                $router->post('/batch-assign-servers', [TenantController::class, 'batchAssignServers']);
+                
+                // 高级功能
+                $router->get('/health/{id}', [TenantController::class, 'health']);
+                $router->get('/export/{id}', [TenantController::class, 'export']);
+                $router->post('/clone/{id}', [TenantController::class, 'clone']);
+                $router->post('/config/{id}', [TenantController::class, 'updateConfig']);
+                $router->get('/logs/{id}', [TenantController::class, 'logs']);
+                $router->post('/batch-action', [TenantController::class, 'batchAction']);
+            });
+            
+            // 租户计费管理（仅超级管理员可访问）
+            $router->group([
+                'prefix' => 'tenant-billing',
+                'middleware' => 'super_admin'
+            ], function ($router) {
+                // 计费方案管理
+                $router->get('/plans', [TenantBillingController::class, 'plans']);
+                $router->post('/plans', [TenantBillingController::class, 'createPlan']);
+                $router->put('/plans/{id}', [TenantBillingController::class, 'updatePlan']);
+                $router->delete('/plans/{id}', [TenantBillingController::class, 'deletePlan']);
+                
+                // 订阅管理
+                $router->get('/subscription/{tenantId}', [TenantBillingController::class, 'getSubscription']);
+                $router->post('/subscription/{tenantId}', [TenantBillingController::class, 'upsertSubscription']);
+                $router->delete('/subscription/{tenantId}', [TenantBillingController::class, 'cancelSubscription']);
+                
+                // 账单管理
+                $router->get('/bills', [TenantBillingController::class, 'getBills']);
+                $router->get('/bills/tenant/{tenantId}', [TenantBillingController::class, 'getBills']);
+                $router->get('/bills/{id}', [TenantBillingController::class, 'getBillDetail']);
+                $router->post('/bills/generate/{tenantId}', [TenantBillingController::class, 'generateBill']);
+                $router->post('/bills/{id}/pay', [TenantBillingController::class, 'payBill']);
+                $router->post('/bills/{id}/cancel', [TenantBillingController::class, 'cancelBill']);
+                
+                // 批量操作
+                $router->post('/batch-generate', [TenantBillingController::class, 'batchGenerateBills']);
+                $router->post('/process-overdue', [TenantBillingController::class, 'processOverdueBills']);
+                
+                // 日志和统计
+                $router->get('/logs', [TenantBillingController::class, 'getBillingLogs']);
+                $router->get('/logs/tenant/{tenantId}', [TenantBillingController::class, 'getBillingLogs']);
+                $router->get('/statistics', [TenantBillingController::class, 'getStatistics']);
+                
+                // 余额管理
+                $router->post('/balance/{tenantId}', [TenantBillingController::class, 'updateBalance']);
             });
         });
 

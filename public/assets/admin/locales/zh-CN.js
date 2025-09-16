@@ -2915,6 +2915,139 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
       }
     }
   },
+  "tenant": {
+    "title": "租户管理",
+    "description": "管理多租户系统中的所有租户，包括创建、编辑、删除和配置租户。",
+    "table": {
+      "columns": {
+        "id": "ID",
+        "name": "租户名称",
+        "domain": "访问域名", 
+        "status": "状态",
+        "users_count": "用户数",
+        "servers_count": "节点数",
+        "max_users": "用户限制",
+        "max_nodes": "节点限制",
+        "balance": "余额",
+        "created_at": "创建时间",
+        "actions": "操作"
+      },
+      "status": {
+        "active": "启用",
+        "inactive": "禁用"
+      },
+      "actions": {
+        "edit": "编辑",
+        "delete": {
+          "title": "删除确认",
+          "description": "确定要删除该租户吗？此操作将永久删除租户的所有数据，且不可恢复！",
+          "success": "租户删除成功"
+        }
+      },
+      "toolbar": {
+        "search": "搜索租户...",
+        "reset": "重置",
+        "refresh": "刷新数据"
+      }
+    },
+    "form": {
+      "add": {
+        "button": "新建租户",
+        "title": "创建新租户"
+      },
+      "edit": {
+        "title": "编辑租户"
+      },
+      "fields": {
+        "name": {
+          "label": "租户名称",
+          "placeholder": "请输入租户名称",
+          "description": "用于识别租户的显示名称"
+        },
+        "domain": {
+          "label": "访问域名",
+          "placeholder": "client1.example.com",
+          "description": "租户独立访问的域名"
+        },
+        "max_users": {
+          "label": "最大用户数",
+          "placeholder": "100",
+          "description": "该租户允许的最大用户数量"
+        },
+        "max_nodes": {
+          "label": "最大节点数", 
+          "placeholder": "10",
+          "description": "该租户可以使用的最大节点数量"
+        },
+        "balance": {
+          "label": "账户余额",
+          "placeholder": "0.00",
+          "description": "租户的账户余额"
+        },
+        "status": {
+          "label": "状态",
+          "options": {
+            "active": "启用",
+            "inactive": "禁用"
+          },
+          "description": "租户的启用状态"
+        },
+        "features": {
+          "label": "功能权限",
+          "description": "选择该租户可以使用的功能模块",
+          "options": {
+            "tickets": "工单系统",
+            "knowledge": "知识库",
+            "coupons": "优惠券",
+            "invites": "邀请返利"
+          }
+        }
+      },
+      "validation": {
+        "name": {
+          "required": "请输入租户名称",
+          "min": "名称至少需要2个字符",
+          "max": "名称不能超过50个字符"
+        },
+        "domain": {
+          "required": "请输入访问域名",
+          "format": "请输入有效的域名格式"
+        },
+        "max_users": {
+          "required": "请输入最大用户数",
+          "min": "用户数不能小于1"
+        },
+        "max_nodes": {
+          "required": "请输入最大节点数",
+          "min": "节点数不能小于1"
+        }
+      },
+      "buttons": {
+        "cancel": "取消",
+        "submit": "保存",
+        "creating": "创建中...",
+        "updating": "更新中..."
+      },
+      "messages": {
+        "create_success": "租户创建成功",
+        "update_success": "租户更新成功",
+        "create_error": "租户创建失败",
+        "update_error": "租户更新失败"
+      }
+    },
+    "stats": {
+      "total_tenants": "总租户数",
+      "active_tenants": "活跃租户",
+      "total_users": "总用户数", 
+      "total_nodes": "总节点数"
+    },
+    "empty": {
+      "title": "暂无租户",
+      "description": "还没有创建任何租户，点击下方按钮创建第一个租户。",
+      "button": "创建第一个租户"
+    },
+    "loading": "正在加载租户数据..."
+  },
   "sidebar": {
     "dashboard": "仪表盘",
     "systemManagement": "系统管理",
@@ -2931,7 +3064,8 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
     "planManagement": "套餐管理",
     "orderManagement": "订单管理",
     "couponManagement": "优惠券管理",
-    "userManagement": "用户管理",
-    "ticketManagement": "工单管理"
+    "userManagement": "用户管理", 
+    "ticketManagement": "工单管理",
+    "tenantManagement": "租户管理"
   }
 };

@@ -38,9 +38,16 @@ class ServerService
      */
     public static function getAvailableServers(User $user): array
     {
-        $servers = Server::whereJsonContains('group_ids', (string) $user->group_id)
-            ->where('show', true)
-            ->orderBy('sort', 'ASC')
+        $query = Server::whereJsonContains('group_ids', (string) $user->group_id)
+            ->where('show', true);
+        
+        // 如果有当前租户，只返回分配给该租户的节点
+        if (app()->has('currentTenant')) {
+            $tenantId = app('currentTenant')->id;
+            $query->forTenant($tenantId);
+        }
+        
+        $servers = $query->orderBy('sort', 'ASC')
             ->get()
             ->append(['last_check_at', 'last_push_at', 'online', 'is_online', 'available_status', 'cache_key', 'server_key']);
 

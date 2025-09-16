@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class Notice extends Model
 {
+    use BelongsToTenant;
     protected $table = 'v2_notice';
     protected $dateFormat = 'U';
     protected $guarded = ['id'];

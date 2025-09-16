@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Services\PlanService;
 use Illuminate\Database\Eloquent\Model;
 
 class Coupon extends Model
 {
+    use BelongsToTenant;
     protected $table = 'v2_coupon';
     protected $dateFormat = 'U';
     protected $guarded = ['id'];

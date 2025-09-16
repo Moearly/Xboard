@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class InviteCode extends Model
 {
+    use BelongsToTenant;
     protected $table = 'v2_invite_code';
     protected $dateFormat = 'U';
     protected $casts = [

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use App\Http\Controllers\Admin\TenantController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,8 +19,16 @@ use Illuminate\Support\Facades\File;
 |
 */
 
+// 超级管理员路由（不应用租户中间件）
+Route::domain(config('app.admin_domain', 'admin.vpnall.com'))->group(function () {
+    Route::prefix('api/admin')->group(function () {
+        Route::resource('tenants', TenantController::class);
+    });
+});
 
-Route::get('/', function (Request $request) {
+// 原有 Xboard 路由，添加租户中间件
+Route::middleware(['tenant'])->group(function () {
+    Route::get('/', function (Request $request) {
     if (admin_setting('app_url') && admin_setting('safe_mode_enable', 0)) {
         if ($request->server('HTTP_HOST') !== parse_url(admin_setting('app_url'))['host']) {
             abort(403);
@@ -68,10 +77,10 @@ Route::get('/', function (Request $request) {
         ]);
         abort(500, '主题加载失败');
     }
-});
+    });
 
-//TODO:: 兼容
-Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))), function () {
+    //TODO:: 兼容
+    Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))), function () {
     return view('admin', [
         'title' => admin_setting('app_name', 'XBoard'),
         'theme_sidebar' => admin_setting('frontend_theme_sidebar', 'light'),
@@ -82,8 +91,14 @@ Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path
         'logo' => admin_setting('logo'),
         'secure_path' => admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key'))))
     ]);
-});
+    });
 
-Route::get('/' . (admin_setting('subscribe_path', 's')) . '/{token}', [\App\Http\Controllers\V1\Client\ClientController::class, 'subscribe'])
-    ->middleware('client')
-    ->name('client.subscribe');
+    // 租户管理页面路由
+    Route::get('/tenant-management', function () {
+        return response(file_get_contents(public_path('tenant-management.html')))->header('Content-Type', 'text/html');
+    })->middleware(['admin']);
+
+    Route::get('/' . (admin_setting('subscribe_path', 's')) . '/{token}', [\App\Http\Controllers\V1\Client\ClientController::class, 'subscribe'])
+        ->middleware('client')
+        ->name('client.subscribe');
+});
