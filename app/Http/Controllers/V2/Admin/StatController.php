@@ -51,6 +51,9 @@ class StatController extends Controller
         $totalTraffic = StatServer::selectRaw('SUM(u) as upload, SUM(d) as download, SUM(u + d) as total')
             ->first();
 
+        // 获取总用户数
+        $totalUsers = User::count();
+
         return [
             'data' => [
                 'month_income' => Order::where('created_at', '>=', strtotime(date('Y-m-1')))
@@ -82,6 +85,7 @@ class StatController extends Controller
                     ->where('created_at', '<', strtotime(date('Y-m-1')))
                     ->sum('get_amount'),
                 // 新增统计数据
+                'total_users' => $totalUsers,  // 添加总用户数
                 'online_nodes' => $onlineNodes,
                 'online_devices' => $onlineDevices,
                 'online_users' => $onlineUsers,

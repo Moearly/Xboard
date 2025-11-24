@@ -75,6 +75,24 @@ class SystemController extends Controller
         }) ? false : true;
     }
 
+    /**
+     * 获取单条日志详情
+     */
+    public function getSystemLogDetail(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer'
+        ]);
+
+        $log = LogModel::find($request->input('id'));
+
+        if (!$log) {
+            return $this->fail([404, '日志不存在']);
+        }
+
+        return $this->success($log);
+    }
+
     public function getQueueStats()
     {
         $data = [
@@ -187,26 +205,34 @@ class SystemController extends Controller
         $request->validate([
             'days' => 'integer|min:0|max:365',
             'level' => 'string|in:info,warning,error,all',
-            'limit' => 'integer|min:100|max:10000'
+            'limit' => 'integer|min:100|max:100000', // 提高上限支持清除所有
+            'clear_all' => 'boolean' // 新增：是否清除所有日志
         ], [
             'days.required' => '请指定要清除多少天前的日志',
             'days.integer' => '天数必须为整数',
-            'days.min' => '天数不能少于1天',
+            'days.min' => '天数不能少于0天',
             'days.max' => '天数不能超过365天',
             'level.in' => '日志级别只能是：info、warning、error、all',
             'limit.min' => '单次清除数量不能少于100条',
-            'limit.max' => '单次清除数量不能超过10000条'
+            'limit.max' => '单次清除数量不能超过100000条'
         ]);
 
         $days = $request->input('days', 30); // 默认清除30天前的日志
         $level = $request->input('level', 'all'); // 默认清除所有级别
         $limit = $request->input('limit', 1000); // 默认单次清除1000条
+        $clearAll = $request->input('clear_all', false); // 是否清除所有日志
 
         try {
-            $cutoffDate = now()->subDays($days);
-
             // 构建查询条件
-            $query = LogModel::where('created_at', '<', $cutoffDate->timestamp);
+            if ($clearAll) {
+                // 清除所有日志（不考虑时间）
+                $query = LogModel::query();
+                $limit = 100000; // 清除所有时使用更大的限制
+            } else {
+                // 清除指定天数前的日志
+                $cutoffDate = now()->subDays($days);
+                $query = LogModel::where('created_at', '<', $cutoffDate->timestamp);
+            }
 
             if ($level !== 'all') {
                 $query->where('level', strtoupper($level));
@@ -225,19 +251,28 @@ class SystemController extends Controller
 
             // 分批删除，避免单次删除过多数据
             $deletedCount = 0;
-            $batchSize = min($limit, 1000); // 每批最多1000条
+            $batchSize = 500; // 每批500条，提高效率
+            $maxToDelete = min($limit, $totalCount); // 最多删除的数量
 
-            while ($deletedCount < $limit && $deletedCount < $totalCount) {
-                $remainingLimit = min($batchSize, $limit - $deletedCount);
+            while ($deletedCount < $maxToDelete) {
+                $remainingToDelete = $maxToDelete - $deletedCount;
+                $currentBatchSize = min($batchSize, $remainingToDelete);
 
-                $batchQuery = LogModel::where('created_at', '<', $cutoffDate->timestamp);
+                // 重新构建查询条件
+                if ($clearAll) {
+                    $batchQuery = LogModel::query();
+                } else {
+                    $batchQuery = LogModel::where('created_at', '<', $cutoffDate->timestamp);
+                }
+                
                 if ($level !== 'all') {
                     $batchQuery->where('level', strtoupper($level));
                 }
 
-                $idsToDelete = $batchQuery->limit($remainingLimit)->pluck('id');
+                $idsToDelete = $batchQuery->limit($currentBatchSize)->pluck('id');
 
                 if ($idsToDelete->isEmpty()) {
+                    // 没有更多日志可删除
                     break;
                 }
 
@@ -245,8 +280,8 @@ class SystemController extends Controller
                 $deletedCount += $batchDeleted;
 
                 // 避免长时间占用数据库连接
-                if ($deletedCount < $limit && $deletedCount < $totalCount) {
-                    usleep(100000); // 暂停0.1秒
+                if ($deletedCount < $maxToDelete) {
+                    usleep(50000); // 暂停0.05秒
                 }
             }
 
