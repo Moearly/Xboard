@@ -54,6 +54,18 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Multi-Tenant Configuration
+    |--------------------------------------------------------------------------
+    |
+    | These values configure the multi-tenant functionality of the application.
+    |
+    */
+
+    'admin_domain' => env('ADMIN_DOMAIN', 'admin.vpnall.com'),
+    'super_admin_emails' => explode(',', env('SUPER_ADMIN_EMAILS', 'admin@vpnall.com')),
+
     'asset_url' => env('ASSET_URL', null),
 
     /*

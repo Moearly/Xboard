@@ -16,29 +16,35 @@ class SuperAdmin
      */
     public function handle(Request $request, Closure $next)
     {
-        // 检查是否已登录
-        if (!$request->user()) {
+        // 检查是否已登录 - 使用Auth::user()而不是$request->user()
+        // 因为Admin中间件使用Auth::setUser()设置用户
+        $user = auth()->user();
+        
+        if (!$user) {
             abort(403, 'Unauthorized access');
         }
 
         // 检查是否是超级管理员
         // 可以通过以下方式判断：
-        // 1. 检查特定的邮箱域名
-        // 2. 检查用户ID是否为1
-        // 3. 检查是否在超级管理员域名访问
+        // 1. 检查用户是否是管理员（is_admin字段）
+        // 2. 检查特定的邮箱
+        // 3. 检查是否从超级管理员域名或localhost访问
         
-        $user = $request->user();
-        
-        // 方式1：检查是否是第一个用户（ID=1）或特定邮箱
-        $superAdminEmails = config('app.super_admin_emails', ['admin@vpnall.com']);
-        
-        if ($user->id === 1 || in_array($user->email, $superAdminEmails)) {
+        // 方式1：检查是否是管理员用户
+        if ($user->is_admin) {
             return $next($request);
         }
         
-        // 方式2：检查是否从超级管理员域名访问
+        // 方式2：检查是否是特定的超级管理员邮箱
+        $superAdminEmails = config('app.super_admin_emails', ['admin@vpnall.com']);
+        if (in_array($user->email, $superAdminEmails)) {
+            return $next($request);
+        }
+        
+        // 方式3：检查是否从超级管理员域名或localhost访问
         $adminDomain = config('app.admin_domain', 'admin.vpnall.com');
-        if ($request->getHost() === $adminDomain && $user->is_admin) {
+        $host = $request->getHost();
+        if (($host === $adminDomain || $host === 'localhost' || $host === '127.0.0.1') && $user->is_admin) {
             return $next($request);
         }
         

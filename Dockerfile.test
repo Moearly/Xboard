@@ -1,0 +1,65 @@
+FROM php:8.2-fpm-alpine
+
+# 设置工作目录
+WORKDIR /var/www/html
+
+# 安装系统依赖
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    zip \
+    unzip \
+    mysql-client \
+    nginx \
+    supervisor
+
+# 安装 PHP 扩展
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    pdo_mysql \
+    mysqli \
+    gd \
+    opcache \
+    pcntl \
+    bcmath
+
+# 安装 Redis 扩展
+RUN apk add --no-cache $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS
+
+# 安装 Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 复制应用代码
+COPY . /var/www/html
+
+# 设置权限
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
+
+# 安装依赖（在构建镜像时vendor已经存在，跳过）
+# RUN if [ ! -d "vendor" ]; then \
+#     composer install --no-interaction --no-dev --optimize-autoloader; \
+#     fi
+
+# 复制 Nginx 配置
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
+
+# 复制 Supervisor 配置
+COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# 暴露端口
+EXPOSE 80
+
+# 启动脚本
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+

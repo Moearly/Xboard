@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XBoard 租户代理访问</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .tenant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .tenant-btn {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .tenant-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        #content {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 XBoard 多租户访问演示</h1>
+        <p>选择一个租户来查看其XBoard界面：</p>
+        
+        <div class="tenant-grid">
+            <button class="tenant-btn" onclick="loadTenant('tenant1.xboard.test', 'e53af425-3a05-4370-9fd1-ddbd57cffc6f')">
+                租户 A
+            </button>
+            <button class="tenant-btn" onclick="loadTenant('tenant2.xboard.test', '6cf5cbe9-c97d-49f6-9727-6d3d59c737d8')">
+                租户 B
+            </button>
+            <button class="tenant-btn" onclick="loadTenant('tenant3.xboard.test', '0d14493f-2037-4420-be7c-5e1b5103e0ab')">
+                租户 C
+            </button>
+        </div>
+
+        <div id="content">
+            <div id="loading" class="loading">加载中...</div>
+            <div id="result" style="display:none;">
+                <h3>当前租户: <span id="current-tenant"></span></h3>
+                <iframe id="tenant-frame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadTenant(domain, uuid) {
+            const content = document.getElementById('content');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const currentTenant = document.getElementById('current-tenant');
+            const frame = document.getElementById('tenant-frame');
+            
+            content.style.display = 'block';
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            currentTenant.textContent = domain;
+            
+            // 使用iframe加载，iframe会自动发送cookie和保持会话
+            // 但我们无法在iframe中添加自定义头...
+            // 所以我们用另一个方法：修改域名解析
+            
+            // 实际上，最好的方法是让用户配置hosts文件
+            alert('提示：请在hosts文件中添加以下记录后访问：\\n\\n' + 
+                  '127.0.0.1 ' + domain + '\\n\\n' +
+                  '然后访问: http://' + domain + ':8080/');
+            
+            loading.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+

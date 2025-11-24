@@ -4,7 +4,7 @@
 /public/storage
 /public/env.example.js
 /storage/*.key
-/vendor
+# /vendor  # 注释掉，Docker构建需要vendor目录
 .env
 .env.backup
 .phpunit.result.cache
@@ -19,7 +19,7 @@ composer.lock
 yarn.lock
 docker-compose.yml
 .DS_Store
-/docker
+# /docker  # 注释掉，Docker 构建需要这些文件
 storage/laravels.conf
 storage/laravels.pid
 storage/laravels-timer-process.pid

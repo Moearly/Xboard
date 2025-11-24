@@ -65,23 +65,21 @@ class Tenant extends Model
     }
 
     /**
-     * 租户分配的节点
+     * 获取所有可用节点（共享模式）
+     * 所有租户共享同一套节点
      */
     public function servers()
     {
-        return $this->belongsToMany(Server::class, 'tenant_server')
-            ->withPivot('is_active')
-            ->withTimestamps();
+        return Server::where('show', 1);
     }
 
     /**
-     * 获取租户可用的节点
+     * 获取租户可用的节点（共享模式）
+     * 所有租户可以访问所有显示的节点
      */
     public function availableServers()
     {
-        return $this->servers()
-            ->wherePivot('is_active', true)
-            ->where('show', 1);
+        return Server::where('show', 1)->get();
     }
 
     public function isActive()
@@ -127,13 +125,13 @@ class Tenant extends Model
 
     /**
      * 检查是否达到节点数限制
+     * 注意：在共享节点模式下，这个限制不再适用
+     * 所有租户共享所有节点
      */
     public function hasReachedNodeLimit()
     {
-        if (!$this->max_nodes) {
-            return false;
-        }
-        return $this->servers()->count() >= $this->max_nodes;
+        // 共享节点模式下，不限制节点数
+        return false;
     }
 
     /**
@@ -173,7 +171,7 @@ class Tenant extends Model
             'total_revenue' => $this->orders()->where('status', 3)->sum('total_amount') / 100,
             'monthly_revenue' => $this->getCurrentMonthRevenue(),
             'plans_count' => $this->plans()->count(),
-            'nodes_count' => $this->servers()->count(),
+            'nodes_count' => 0, // 共享节点总数 - 暂时返回0，因为XBoard使用分表策略
         ];
         
         $this->update([

@@ -9,15 +9,49 @@ use Illuminate\Contracts\Cache\Repository;
 
 class Setting
 {
-    const CACHE_KEY = 'admin_settings';
+    const CACHE_KEY_PREFIX = 'admin_settings';
 
     private Repository $cache;
     private ?array $loadedSettings = null; // 请求内缓存
 
     public function __construct()
     {
-        $this->cache = Cache::store('redis');
+        // 使用默认缓存驱动（支持file/redis/array等）
+        $this->cache = Cache::store();
     }
+
+    /**
+     * 获取当前租户的缓存键
+     */
+    private function getCacheKey(): string
+    {
+        $tenantId = $this->getCurrentTenantId();
+        return self::CACHE_KEY_PREFIX . ':tenant_' . $tenantId;
+    }
+    
+    /**
+     * 获取共享配置的缓存键
+     */
+    private function getSharedCacheKey(): string
+    {
+        return self::CACHE_KEY_PREFIX . ':shared';
+    }
+    
+    /**
+     * 获取当前租户ID
+     */
+    private function getCurrentTenantId(): int
+    {
+        if (app()->has('currentTenant')) {
+            return app('currentTenant')->id;
+        }
+        return 1; // 默认租户
+    }
+    
+    /**
+     * 当前加载的租户ID（用于检测租户切换）
+     */
+    private ?int $currentLoadedTenantId = null;
 
     /**
      * 获取配置.
@@ -51,11 +85,16 @@ class Setting
     }
 
     /**
-     * 删除配置信息
+     * 删除配置信息（支持共享/独立混合模式）
      */
     public function remove(string $key): bool
     {
-        SettingModel::where('name', $key)->delete();
+        $tenantId = \App\Support\SharedSettings::getTenantIdForKey($key);
+        
+        SettingModel::where('name', $key)
+            ->where('tenant_id', $tenantId)
+            ->delete();
+            
         $this->flush();
         return true;
     }
@@ -97,18 +136,33 @@ class Setting
     }
 
     /**
-     * 加载配置到请求内缓存
+     * 加载配置到请求内缓存（租户感知版本）
      */
     private function load(): void
     {
+        $currentTenantId = $this->getCurrentTenantId();
+        
+        // 如果租户切换了，清空缓存
+        if ($this->loadedSettings !== null && $this->currentLoadedTenantId !== $currentTenantId) {
+            $this->loadedSettings = null;
+        }
+        
         if ($this->loadedSettings !== null) {
             return;
         }
+        
+        // 记住当前租户ID
+        $this->currentLoadedTenantId = $currentTenantId;
 
         try {
-            $settings = $this->cache->rememberForever(self::CACHE_KEY, function (): array {
+            $cacheKey = $this->getCacheKey();
+            $tenantId = $this->getCurrentTenantId();
+            
+            $settings = $this->cache->rememberForever($cacheKey, function () use ($tenantId): array {
                 return array_change_key_case(
-                    SettingModel::pluck('value', 'name')->toArray(),
+                    SettingModel::where('tenant_id', $tenantId)
+                        ->pluck('value', 'name')
+                        ->toArray(),
                     CASE_LOWER
                 );
             });
@@ -124,17 +178,42 @@ class Setting
             }
             
             $this->loadedSettings = $settings;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            \Log::error('Failed to load tenant settings', [
+                'tenant_id' => $this->getCurrentTenantId(),
+                'error' => $e->getMessage()
+            ]);
             $this->loadedSettings = [];
         }
     }
 
     /**
-     * 清空缓存
+     * 清空缓存（租户特定）
      */
     private function flush(): void
     {
-        $this->cache->forget(self::CACHE_KEY);
+        $cacheKey = $this->getCacheKey();
+        $this->cache->forget($cacheKey);
         $this->loadedSettings = null;
+    }
+    
+    /**
+     * 清空所有租户的配置缓存（超级管理员使用）
+     */
+    public function flushAll(): void
+    {
+        try {
+            // 清空所有租户的缓存
+            $tenants = \App\Models\Tenant::all();
+            foreach ($tenants as $tenant) {
+                $cacheKey = self::CACHE_KEY_PREFIX . ':tenant_' . $tenant->id;
+                $this->cache->forget($cacheKey);
+            }
+            $this->loadedSettings = null;
+        } catch (\Throwable $e) {
+            \Log::error('Failed to flush all tenant settings cache', [
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

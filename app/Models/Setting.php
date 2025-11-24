@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
+    use BelongsToTenant;
+    
     protected $table = 'v2_settings';
     protected $guarded = [];
     protected $casts = [
@@ -54,15 +57,29 @@ class Setting extends Model
     }
 
     /**
-     * 创建或更新设置项
+     * 创建或更新设置项（支持共享/独立混合模式）
      */
     public static function createOrUpdate(string $name, $value): self
     {
         $processedValue = is_array($value) ? json_encode($value) : $value;
         
+        // 根据配置项类型确定租户ID
+        $tenantId = \App\Support\SharedSettings::getTenantIdForKey($name);
+        
         return self::updateOrCreate(
-            ['name' => $name],
+            [
+                'name' => $name,
+                'tenant_id' => $tenantId
+            ],
             ['value' => $processedValue]
         );
+    }
+    
+    /**
+     * 租户关联
+     */
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
     }
 }

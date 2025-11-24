@@ -223,6 +223,13 @@ class ConfigController extends Controller
     public function save(ConfigSave $request)
     {
         $data = $request->validated();
+        
+        // 生产环境移除debug输出
+        $debugInfo = [
+            'X-Tenant-ID_header' => $request->header('X-Tenant-ID'),
+            'has_currentTenant' => app()->has('currentTenant'),
+            'currentTenant_id' => app()->has('currentTenant') ? app('currentTenant')->id : null,
+        ];
 
         foreach ($data as $k => $v) {
             if ($k == 'frontend_theme') {
@@ -232,7 +239,13 @@ class ConfigController extends Controller
             admin_setting([$k => $v]);
         }
 
-        return $this->success(true);
+        // 返回成功时附带调试信息
+        return response()->json([
+            'status' => 'success',
+            'message' => '操作成功',
+            'data' => true,
+            '_debug' => $debugInfo,
+        ]);
     }
 
     /**

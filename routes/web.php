@@ -20,14 +20,108 @@ use App\Http\Controllers\Admin\TenantController;
 */
 
 // 超级管理员路由（不应用租户中间件）
+// 方案1: 域名限制（生产环境推荐）
 Route::domain(config('app.admin_domain', 'admin.vpnall.com'))->group(function () {
     Route::prefix('api/admin')->group(function () {
+        // 租户管理
         Route::resource('tenants', TenantController::class);
+        Route::post('tenants/{id}/status', [TenantController::class, 'updateStatus']);
+        
+        // 共享节点管理
+        Route::get('servers/all', [TenantController::class, 'getAllServers']);
+        Route::get('tenants/{id}/servers', [TenantController::class, 'getTenantServers']);
+        
+        // 全局统计
+        Route::get('global/statistics', [TenantController::class, 'getGlobalStatistics']);
+        Route::get('tenants/statistics', [TenantController::class, 'getTenantStatistics']);
     });
 });
 
-// 原有 Xboard 路由，添加租户中间件
+// 方案2: 无域名限制（开发/测试环境，通过URL参数识别）
+// 使用 ?super_admin=true 参数访问
+Route::prefix('api/super-admin')->group(function () {
+    // 在每个路由内部检查权限
+    Route::get('tenants', function(Request $request) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->index($request);
+    });
+    
+    Route::post('tenants', function(Request $request) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->store($request);
+    });
+    
+    Route::get('tenants/{id}', function(Request $request, $id) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->show($id);
+    });
+    
+    Route::put('tenants/{id}', function(Request $request, $id) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->update($request, $id);
+    });
+    
+    Route::delete('tenants/{id}', function(Request $request, $id) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->destroy($id);
+    });
+    
+    Route::post('tenants/{id}/status', function(Request $request, $id) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->updateStatus($request, $id);
+    });
+    
+    Route::get('servers/all', function(Request $request) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->getAllServers($request);
+    });
+    
+    Route::get('tenants/{id}/servers', function(Request $request, $id) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->getTenantServers($id);
+    });
+    
+    Route::get('global/statistics', function(Request $request) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->getGlobalStatistics();
+    });
+    
+    Route::get('tenants/statistics', function(Request $request) {
+        if ($request->query('super_admin') !== 'true' && $request->header('X-Super-Admin') !== 'true') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return app(TenantController::class)->getTenantStatistics();
+    });
+});
+
+// 租户特定的 API 路由
 Route::middleware(['tenant'])->group(function () {
+    // 租户信息 API
+    Route::prefix('api')->group(function () {
+        Route::get('tenant/current', [TenantController::class, 'getCurrentTenant']);
+        Route::get('tenant/stats', [TenantController::class, 'getTenantStats']);
+        Route::post('tenant/config', [TenantController::class, 'updateTenantConfig']);
+    });
+    
+    // 原有 Xboard 路由
     Route::get('/', function (Request $request) {
     if (admin_setting('app_url') && admin_setting('safe_mode_enable', 0)) {
         if ($request->server('HTTP_HOST') !== parse_url(admin_setting('app_url'))['host']) {

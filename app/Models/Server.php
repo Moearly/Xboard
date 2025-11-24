@@ -469,42 +469,8 @@ class Server extends Model
     }
 
     /**
-     * 节点所属的租户
+     * 节点在多租户架构中为共享资源
+     * 所有租户都可以访问所有节点
+     * 不再需要租户关联和隔离
      */
-    public function tenants()
-    {
-        return $this->belongsToMany(Tenant::class, 'tenant_server')
-            ->withPivot('is_active')
-            ->withTimestamps();
-    }
-
-    /**
-     * 检查节点是否分配给指定租户
-     */
-    public function isAssignedToTenant($tenantId)
-    {
-        return $this->tenants()
-            ->where('tenant_id', $tenantId)
-            ->wherePivot('is_active', true)
-            ->exists();
-    }
-
-    /**
-     * 限制查询只返回当前租户的节点
-     */
-    public function scopeForTenant($query, $tenantId = null)
-    {
-        if (!$tenantId && app()->has('currentTenant')) {
-            $tenantId = app('currentTenant')->id;
-        }
-
-        if ($tenantId) {
-            return $query->whereHas('tenants', function ($q) use ($tenantId) {
-                $q->where('tenant_id', $tenantId)
-                  ->where('tenant_server.is_active', true);
-            });
-        }
-
-        return $query;
-    }
 }
