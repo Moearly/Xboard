@@ -35,10 +35,12 @@ class TenantIdentification
         // 检查是否为超级管理员域名或请求
         $securePath = admin_setting('secure_path', 'admin');
         $isAdminPath = $request->path() === $securePath || str_starts_with($request->path(), $securePath . '/');
+        $isAdminApi = str_starts_with($request->path(), 'api/v2/admin/') || str_starts_with($request->path(), 'api/v1/admin/');
         
         if ($domain === $adminDomain || 
             $request->header('X-Super-Admin') === 'true' ||
-            $isAdminPath) {
+            $isAdminPath ||
+            $isAdminApi) {
             Log::info('Super admin request detected', [
                 'is_admin_domain' => $domain === $adminDomain,
                 'has_super_admin_header' => $request->header('X-Super-Admin') === 'true',

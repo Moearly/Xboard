@@ -75,6 +75,7 @@ class Plan extends Model
     ];
 
     protected $fillable = [
+        'tenant_id', // 添加租户ID支持多站点隔离
         'group_id',
         'transfer_enable',
         'name',

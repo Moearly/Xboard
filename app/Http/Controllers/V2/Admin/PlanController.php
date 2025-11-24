@@ -37,6 +37,14 @@ class PlanController extends Controller
     {
         $params = $request->validated();
         
+        // 记录调试信息
+        $currentTenant = app()->has('currentTenant') ? app('currentTenant') : null;
+        Log::info('Plan save request', [
+            'params' => $params,
+            'currentTenant' => $currentTenant ? $currentTenant->id : null,
+            'user_id' => auth()->id(),
+        ]);
+        
         if ($request->input('id')) {
             $plan = Plan::find($request->input('id'));
             if (!$plan) {
@@ -58,28 +66,42 @@ class PlanController extends Controller
                 return $this->success(true);
             } catch (\Exception $e) {
                 DB::rollBack();
-                Log::error($e);
-                return $this->fail([500, '保存失败']);
+                Log::error('Plan update failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return $this->fail([500, '保存失败: ' . $e->getMessage()]);
             }
         }
-        if (!Plan::create($params)) {
-            return $this->fail([500, '创建失败']);
+        
+        DB::beginTransaction();
+        try {
+            $plan = Plan::create($params);
+            if (!$plan) {
+                throw new \Exception('创建套餐失败');
+            }
+            DB::commit();
+            Log::info('Plan created successfully', ['plan_id' => $plan->id, 'tenant_id' => $plan->tenant_id]);
+            return $this->success(true);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Plan create failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->fail([500, '创建失败: ' . $e->getMessage()]);
         }
-        return $this->success(true);
     }
 
     public function drop(Request $request)
     {
+        // 注意：超级管理员删除时需要禁用租户过滤，否则无法删除其他租户或NULL tenant_id的套餐
+        $plan = Plan::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->find($request->input('id'));
+            
+        if (!$plan) {
+            return $this->fail([400202, '该订阅不存在']);
+        }
+        
         if (Order::where('plan_id', $request->input('id'))->first()) {
             return $this->fail([400201, '该订阅下存在订单无法删除']);
         }
         if (User::where('plan_id', $request->input('id'))->first()) {
             return $this->fail([400201, '该订阅下存在用户无法删除']);
-        }
-        
-        $plan = Plan::find($request->input('id'));
-        if (!$plan) {
-            return $this->fail([400202, '该订阅不存在']);
         }
         
         return $this->success($plan->delete());
