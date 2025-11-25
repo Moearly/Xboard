@@ -27,7 +27,7 @@ class AdminRoute
     public function map(Registrar $router)
     {
         $router->group([
-            'prefix' => admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))),
+            'prefix' => 'admin',  // 固定使用 'admin' 作为API前缀，因为前端统一使用 /api/v2/admin/*
             'middleware' => ['tenant', 'admin', 'log'],
         ], function ($router) {
             // Config
