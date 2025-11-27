@@ -72,10 +72,10 @@ class ServerService
      * @param array $groupIds
      * @return Collection
      */
-    public static function getAvailableUsers(array $groupIds)
+    public static function getAvailableUsers(Server $node)
     {
         $users = User::toBase()
-            ->whereIn('group_id', $groupIds)
+            ->whereIn('group_id', $node->group_ids)
             ->whereRaw('u + d < transfer_enable')
             ->where(function ($query) {
                 $query->where('expired_at', '>=', time())
@@ -89,7 +89,7 @@ class ServerService
                 'device_limit'
             ])
             ->get();
-        return HookManager::filter('server.users.get', $users, $groupIds);
+        return HookManager::filter('server.users.get', $users, $node);
     }
 
     // 获取路由规则
@@ -105,10 +105,12 @@ class ServerService
      * @param string $serverType
      * @return Server|null
      */
-    public static function getServer($serverId, $serverType)
+    public static function getServer($serverId, ?string $serverType)
     {
         return Server::query()
-            ->where('type', Server::normalizeType($serverType))
+            ->when($serverType, function ($query) use ($serverType) {
+                $query->where('type', Server::normalizeType($serverType));
+            })
             ->where(function ($query) use ($serverId) {
                 $query->where('code', $serverId)
                     ->orWhere('id', $serverId);

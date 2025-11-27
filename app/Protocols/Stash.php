@@ -314,7 +314,12 @@ class Stash extends AbstractProtocol
             case 'tcp':
                 if ($headerType = data_get($protocol_settings, 'network_settings.header.type', 'tcp') != 'tcp') {
                     $array['network'] = $headerType;
-                    $array['http-opts']['path'] = data_get($protocol_settings, 'network_settings.header.request.path', ['/']);
+                    if ($httpOpts = array_filter([
+                        'headers' => data_get($protocol_settings, 'network_settings.header.request.headers'),
+                        'path' => data_get($protocol_settings, 'network_settings.header.request.path', ['/'])
+                    ])) {
+                        $array['http-opts'] = $httpOpts;
+                    }
                 }
                 break;
             case 'ws':
@@ -356,7 +361,9 @@ class Stash extends AbstractProtocol
             case 'ws':
                 $array['network'] = 'ws';
                 $array['ws-opts']['path'] = data_get($protocol_settings, 'network_settings.path');
-                $array['ws-opts']['headers'] = data_get($protocol_settings, 'network_settings.headers.Host') ? ['Host' => data_get($protocol_settings, 'network_settings.headers.Host')] : null;
+                if ($host = data_get($protocol_settings, 'network_settings.headers.Host')) {
+                    $array['ws-opts']['headers'] = ['Host' => $host];
+                }
                 break;
         }
         if ($serverName = data_get($protocol_settings, 'server_name')) {
@@ -415,6 +422,7 @@ class Stash extends AbstractProtocol
             'heartbeat-interval' => 10000,
             'request-timeout' => 8000,
             'max-udp-relay-packet-size' => 1500,
+            'version' => data_get($protocol_settings, 'version', 5),
         ];
 
         $array['skip-cert-verify'] = (bool) data_get($protocol_settings, 'tls.allow_insecure', false);

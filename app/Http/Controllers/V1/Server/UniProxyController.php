@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1\Server;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\UpdateAliveDataJob;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Utils\CacheKey;
@@ -35,7 +36,7 @@ class UniProxyController extends Controller
         $nodeType = $node->type;
         $nodeId = $node->id;
         Cache::put(CacheKey::get('SERVER_' . strtoupper($nodeType) . '_LAST_CHECK_AT', $nodeId), time(), 3600);
-        $users = ServerService::getAvailableUsers($node->group_ids);
+        $users = ServerService::getAvailableUsers($node);
 
         $response['users'] = $users;
 
@@ -94,6 +95,8 @@ class UniProxyController extends Controller
         $host = $node->host;
 
         $baseConfig = [
+            'protocol' => $nodeType,
+            'listen_ip' => '0.0.0.0',
             'server_port' => (int) $serverPort,
             'network' => data_get($protocolSettings, 'network'),
             'networkSettings' => data_get($protocolSettings, 'network_settings') ?: null,
@@ -131,6 +134,7 @@ class UniProxyController extends Controller
                         }
             ],
             'hysteria' => [
+                ...$baseConfig,
                 'server_port' => (int) $serverPort,
                 'version' => (int) $protocolSettings['version'],
                 'host' => $host,
@@ -147,6 +151,7 @@ class UniProxyController extends Controller
                     }
             ],
             'tuic' => [
+                ...$baseConfig,
                 'version' => (int) $protocolSettings['version'],
                 'server_port' => (int) $serverPort,
                 'server_name' => $protocolSettings['tls']['server_name'],
@@ -156,24 +161,29 @@ class UniProxyController extends Controller
                 'heartbeat' => "3s",
             ],
             'anytls' => [
+                ...$baseConfig,
                 'server_port' => (int) $serverPort,
                 'server_name' => $protocolSettings['tls']['server_name'],
                 'padding_scheme' => $protocolSettings['padding_scheme'],
             ],
             'socks' => [
+                ...$baseConfig,
                 'server_port' => (int) $serverPort,
             ],
             'naive' => [
+                ...$baseConfig,
                 'server_port' => (int) $serverPort,
                 'tls' => (int) $protocolSettings['tls'],
                 'tls_settings' => $protocolSettings['tls_settings']
             ],
             'http' => [
+                ...$baseConfig,
                 'server_port' => (int) $serverPort,
                 'tls' => (int) $protocolSettings['tls'],
                 'tls_settings' => $protocolSettings['tls_settings']
             ],
             'mieru' => [
+                ...$baseConfig,
                 'server_port' => (string) $serverPort,
                 'protocol' => (int) $protocolSettings['protocol'],
             ],
@@ -200,7 +210,7 @@ class UniProxyController extends Controller
     public function alivelist(Request $request): JsonResponse
     {
         $node = $this->getNodeInfo($request);
-        $deviceLimitUsers = ServerService::getAvailableUsers($node->group_ids)
+        $deviceLimitUsers = ServerService::getAvailableUsers($node)
             ->where('device_limit', '>', 0);
         $alive = $this->userOnlineService->getAliveList($deviceLimitUsers);
         return response()->json(['alive' => (object) $alive]);
@@ -216,7 +226,7 @@ class UniProxyController extends Controller
                 'error' => 'Invalid online data'
             ], 400);
         }
-        $this->userOnlineService->updateAliveData($data, $node->type, $node->id);
+        UpdateAliveDataJob::dispatch($data, $node->type, $node->id);
         return response()->json(['data' => true]);
     }
 

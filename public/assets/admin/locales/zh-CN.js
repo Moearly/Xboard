@@ -972,6 +972,10 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
         "previousPage": "上一页",
         "nextPage": "下一页",
         "lastPage": "跳转到最后一页"
+      },
+      "viewOptions": {
+        "button": "显示列",
+        "label": "切换显示列"
       }
     },
     "update": {
@@ -2000,6 +2004,8 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
         "disk": "磁盘使用",
         "lastUpdate": "最后更新"
       },
+      "customId": "自定义ID",
+      "originalId": "原始ID",
       "type": "类型",
       "actions": "操作",
       "copyAddress": "复制连接地址",
@@ -2044,7 +2050,9 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
         "label": "基础倍率",
         "error": "基础倍率不能为空",
         "error_numeric": "基础倍率必须是数字",
-        "error_gte_zero": "基础倍率必须大于或等于0"
+        "error_gte_zero": "基础倍率必须大于或等于0",
+        "child_node_tooltip": "子节点的基础倍率继承自父节点，无法单独设置",
+        "child_node_note": "子节点倍率继承自父节点"
       },
       "dynamic_rate": {
         "section_title": "动态倍率配置",
@@ -2453,6 +2461,7 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
       },
       "actions_menu": {
         "edit": "编辑",
+        "view_details": "查看详情",
         "assign_order": "分配订单",
         "copy_url": "复制订阅URL",
         "reset_secret": "重置UUID及订阅URL",
@@ -2742,6 +2751,56 @@ window.XBOARD_TRANSLATIONS['zh-CN'] = {
       "content": "内容",
       "sending": "发送中...",
       "send": "发送"
+    },
+    "dialog": {
+      "title": "用户详情",
+      "basicInfo": "基本信息",
+      "subscriptionInfo": "订阅信息",
+      "trafficInfo": "流量信息",
+      "financialInfo": "财务信息",
+      "activityInfo": "活动信息",
+      "inviteInfo": "邀请信息",
+      "timeInfo": "时间信息",
+      "subscriptionUrl": "订阅链接",
+      "fields": {
+        "userId": "用户ID",
+        "email": "邮箱",
+        "uuid": "UUID",
+        "token": "Token",
+        "remarks": "备注",
+        "subscriptionPlan": "订阅套餐",
+        "permissionGroup": "权限组",
+        "expiredAt": "到期时间",
+        "deviceLimit": "设备限制",
+        "speedLimit": "速度限制",
+        "transferEnable": "总流量",
+        "uploadUsed": "上传已用",
+        "downloadUsed": "下载已用",
+        "totalUsed": "总已用",
+        "lastResetAt": "上次重置",
+        "nextResetAt": "下次重置",
+        "resetCount": "重置次数",
+        "balance": "余额",
+        "commissionBalance": "佣金余额",
+        "commissionType": "佣金类型",
+        "commissionRate": "佣金比例",
+        "lastLoginAt": "最后登录",
+        "lastLoginIp": "最后登录IP",
+        "lastOnlineAt": "最后在线",
+        "onlineCount": "在线设备",
+        "inviteUser": "邀请人",
+        "inviteUserId": "邀请人ID",
+        "createdAt": "创建时间",
+        "updatedAt": "更新时间",
+        "subscribeUrl": "订阅链接",
+        "telegramId": "Telegram ID"
+      }
+    },
+    "status": {
+      "normal": "正常",
+      "banned": "已封禁",
+      "admin": "管理员",
+      "staff": "员工"
     }
   },
   "subscribe": {
