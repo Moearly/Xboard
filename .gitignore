@@ -8,7 +8,9 @@
 /storage/*.key
 /vendor
 .env
-.env.backup
+.env.*
+!.env.example
+.env.backup*
 .phpunit.result.cache
 .idea
 .lock
