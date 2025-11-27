@@ -16,6 +16,7 @@ use App\Utils\Helper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -442,22 +443,27 @@ class UserController extends Controller
         $sort = $request->input('sort') ? $request->input('sort') : 'created_at';
         $builder = User::orderBy($sort, $sortType);
         $this->applyFiltersAndSorts($request, $builder);
-        $users = $builder->get();
-        foreach ($users as $user) {
-            SendEmailJob::dispatch(
-                [
+
+        $subject = $request->input('subject');
+        $content = $request->input('content');
+        $templateValue = [
+            'name' => admin_setting('app_name', 'XBoard'),
+            'url' => admin_setting('app_url'),
+            'content' => $content
+        ];
+
+        $chunkSize = 1000;
+
+        $builder->chunk($chunkSize, function ($users) use ($subject, $templateValue, &$totalProcessed) {
+            foreach ($users as $user) {
+                dispatch(new SendEmailJob([
                     'email' => $user->email,
-                    'subject' => $request->input('subject'),
+                    'subject' => $subject,
                     'template_name' => 'notify',
-                    'template_value' => [
-                        'name' => admin_setting('app_name', 'XBoard'),
-                        'url' => admin_setting('app_url'),
-                        'content' => $request->input('content')
-                    ]
-                ],
-                'send_email_mass'
-            );
-        }
+                    'template_value' => $templateValue
+                ], 'send_email_mass'));
+            }
+        });
 
         return $this->success(true);
     }
