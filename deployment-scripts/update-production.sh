@@ -6,13 +6,20 @@
 
 set -e
 
-# 服务器配置
-SERVER_IP="38.55.193.181"
-SERVER_USER="root"
-SERVER_PASS='5z=x;7pu~fC~uUz'
-SERVER_PORT="7002"
-CONTAINER_NAME="xboard-multi-tenant-official"
-REMOTE_DIR="/opt/Xboard"
+# 服务器配置（从环境变量或配置文件读取）
+SERVER_IP="${SERVER_IP:-38.55.193.181}"
+SERVER_USER="${SERVER_USER:-root}"
+SERVER_PASS="${SERVER_PASS}"  # 必须通过环境变量传入
+SERVER_PORT="${SERVER_PORT:-7002}"
+CONTAINER_NAME="${CONTAINER_NAME:-xboard-multi-tenant-official}"
+REMOTE_DIR="${REMOTE_DIR:-/opt/Xboard}"
+
+# 检查必需的环境变量
+if [ -z "$SERVER_PASS" ]; then
+    error "请设置 SERVER_PASS 环境变量"
+    echo "使用方法: SERVER_PASS='your_password' $0"
+    exit 1
+fi
 
 # 颜色定义
 RED='\033[0;31m'

@@ -5,10 +5,17 @@
 
 set -e
 
-# 服务器信息
-SERVER_IP="38.55.193.181"
-SERVER_USER="root"
-SERVER_PASS='5z=x;7pu~fC~uUz'
+# 服务器信息（从环境变量读取）
+SERVER_IP="${SERVER_IP:-38.55.193.181}"
+SERVER_USER="${SERVER_USER:-root}"
+SERVER_PASS="${SERVER_PASS}"  # 必须通过环境变量传入
+
+# 检查必需的环境变量
+if [ -z "$SERVER_PASS" ]; then
+    echo -e "${RED}❌ 请设置 SERVER_PASS 环境变量${NC}"
+    echo "使用方法: SERVER_PASS='your_password' $0"
+    exit 1
+fi
 
 # 颜色定义
 RED='\033[0;31m'
