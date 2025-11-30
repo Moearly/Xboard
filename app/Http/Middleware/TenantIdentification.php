@@ -33,7 +33,8 @@ class TenantIdentification
         ]);
 
         // 检查是否为超级管理员域名或请求
-        $securePath = admin_setting('secure_path', 'admin');
+        // 使用动态计算的管理路径，确保与路由配置一致
+        $securePath = admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key'))));
         $isAdminPath = $request->path() === $securePath || str_starts_with($request->path(), $securePath . '/');
         $isAdminApi = str_starts_with($request->path(), 'api/v2/admin/') || str_starts_with($request->path(), 'api/v1/admin/');
         
