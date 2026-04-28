@@ -211,13 +211,8 @@ class MailService
      */
     public static function sendEmail(array $params)
     {
-        if (admin_setting('email_host')) {
-            Config::set('mail.host', admin_setting('email_host', config('mail.host')));
-            Config::set('mail.port', admin_setting('email_port', config('mail.port')));
-            Config::set('mail.encryption', admin_setting('email_encryption', config('mail.encryption')));
-            Config::set('mail.username', admin_setting('email_username', config('mail.username')));
-            Config::set('mail.password', admin_setting('email_password', config('mail.password')));
-            Config::set('mail.from.address', admin_setting('email_from_address', config('mail.from.address')));
+        if (admin_setting('email_from_address')) {
+            Config::set('mail.from.address', admin_setting('email_from_address'));
             Config::set('mail.from.name', admin_setting('app_name', 'XBoard'));
         }
         $email = $params['email'];
@@ -241,7 +236,6 @@ class MailService
             'subject' => $params['subject'],
             'template_name' => $params['template_name'],
             'error' => $error,
-            'config' => config('mail')
         ];
         MailLog::create($log);
         return $log;

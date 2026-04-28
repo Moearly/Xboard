@@ -58,11 +58,19 @@ class OrderService
         return DB::transaction(function () use ($user, $plan, $period, $couponCode, $userService) {
             $newPeriod = PlanService::getPeriodKey($period);
 
+            $tradeNo = Helper::generateOrderNo();
+            $retries = 0;
+            while (Order::withoutGlobalScopes()->where('trade_no', $tradeNo)->exists() && $retries < 5) {
+                usleep(100000);
+                $tradeNo = Helper::generateOrderNo();
+                $retries++;
+            }
+
             $order = new Order([
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'period' => $newPeriod,
-                'trade_no' => Helper::generateOrderNo(),
+                'trade_no' => $tradeNo,
                 'total_amount' => (int) (optional($plan->prices)[$newPeriod] * 100),
             ]);
 

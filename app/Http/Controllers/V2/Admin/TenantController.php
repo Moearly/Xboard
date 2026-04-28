@@ -36,15 +36,39 @@ class TenantController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'domain' => 'required|string|unique:tenants,domain',
+            'admin_email' => 'required|email|max:255',
+            'admin_phone' => 'nullable|string|max:20',
             'status' => 'boolean',
             'expire_at' => 'nullable|date',
+            'limits.max_users' => 'sometimes|integer|min:1',
+            'limits.max_orders_per_month' => 'sometimes|integer|min:1',
+            'limits.max_nodes' => 'sometimes|integer|min:1',
+            'limits.max_monthly_revenue' => 'sometimes|numeric|min:1',
+            'features' => 'nullable|array',
             'config' => 'nullable|array',
         ]);
 
-        $tenant = Tenant::create(array_merge($validated, [
+        $createData = [
             'uuid' => Str::uuid()->toString(),
+            'name' => $validated['name'],
+            'domain' => $validated['domain'],
             'status' => $validated['status'] ?? true,
-        ]));
+            'admin_email' => $validated['admin_email'] ?? null,
+            'admin_phone' => $validated['admin_phone'] ?? null,
+            'expire_at' => $validated['expire_at'] ?? null,
+            'features' => $validated['features'] ?? Tenant::getDefaultFeatures(),
+            'config' => $validated['config'] ?? [],
+        ];
+
+        if ($request->has('limits')) {
+            $limits = $request->limits;
+            if (isset($limits['max_users'])) $createData['max_users'] = $limits['max_users'];
+            if (isset($limits['max_orders_per_month'])) $createData['max_orders_per_month'] = $limits['max_orders_per_month'];
+            if (isset($limits['max_nodes'])) $createData['max_nodes'] = $limits['max_nodes'];
+            if (isset($limits['max_monthly_revenue'])) $createData['max_monthly_revenue'] = $limits['max_monthly_revenue'];
+        }
+
+        $tenant = Tenant::create($createData);
 
         return response()->json([
             'message' => '租户创建成功',
@@ -75,16 +99,36 @@ class TenantController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'domain' => 'sometimes|string|unique:tenants,domain,' . $id,
+            'admin_email' => 'sometimes|email|max:255',
+            'admin_phone' => 'nullable|string|max:20',
             'status' => 'sometimes|boolean',
             'expire_at' => 'nullable|date',
-            'config' => 'nullable|array',
+            'limits.max_users' => 'sometimes|integer|min:1',
+            'limits.max_orders_per_month' => 'sometimes|integer|min:1',
+            'limits.max_nodes' => 'sometimes|integer|min:1',
+            'limits.max_monthly_revenue' => 'sometimes|numeric|min:1',
+            'features' => 'sometimes|array',
+            'config' => 'sometimes|array',
         ]);
 
-        $tenant->update($validated);
+        $updateData = $request->only([
+            'name', 'domain', 'admin_email', 'admin_phone',
+            'expire_at', 'status', 'features', 'config'
+        ]);
+
+        if ($request->has('limits')) {
+            $limits = $request->limits;
+            if (isset($limits['max_users'])) $updateData['max_users'] = $limits['max_users'];
+            if (isset($limits['max_orders_per_month'])) $updateData['max_orders_per_month'] = $limits['max_orders_per_month'];
+            if (isset($limits['max_nodes'])) $updateData['max_nodes'] = $limits['max_nodes'];
+            if (isset($limits['max_monthly_revenue'])) $updateData['max_monthly_revenue'] = $limits['max_monthly_revenue'];
+        }
+
+        $tenant->update($updateData);
 
         return response()->json([
             'message' => '租户更新成功',
-            'data' => $tenant
+            'data' => $tenant->fresh()
         ]);
     }
 

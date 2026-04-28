@@ -25,7 +25,7 @@ class UserRoute
             'middleware' => 'user'
         ], function ($router) {
             // User
-            $router->get('/resetSecurity', [UserController::class, 'resetSecurity']);
+            $router->match(['get', 'post'], '/resetSecurity', [UserController::class, 'resetSecurity']);
             $router->get('/info', [UserController::class, 'info']);
             $router->post('/changePassword', [UserController::class, 'changePassword']);
             $router->post('/update', [UserController::class, 'update']);

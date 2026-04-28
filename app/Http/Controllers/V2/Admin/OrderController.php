@@ -209,9 +209,15 @@ class OrderController extends Controller
             return $this->fail([400202, '该订阅不存在']);
         }
 
-        $userService = new UserService();
-        if ($userService->isNotCompleteOrderByUserId($user->id)) {
-            return $this->fail([400, '该用户还有待支付的订单，无法分配']);
+        $pendingQuery = Order::withoutGlobalScopes()
+            ->whereIn('status', [0, 1])
+            ->where('user_id', $user->id);
+        if ($request->header('X-Tenant-ID')) {
+            $pendingQuery->where('tenant_id', $request->header('X-Tenant-ID'));
+        }
+        $pendingOrder = $pendingQuery->first();
+        if ($pendingOrder) {
+            return $this->fail([400, '该用户还有待处理的订单(#' . $pendingOrder->trade_no . ')，请先取消后再分配']);
         }
 
         try {
@@ -220,6 +226,7 @@ class OrderController extends Controller
             $orderService = new OrderService($order);
             $order->user_id = $user->id;
             $order->plan_id = $plan->id;
+            $order->tenant_id = $request->header('X-Tenant-ID') ?: $user->tenant_id;
             $period = $request->input('period');
             $order->period = PlanService::getPeriodKey((string) $period);
             $order->trade_no = Helper::guid();

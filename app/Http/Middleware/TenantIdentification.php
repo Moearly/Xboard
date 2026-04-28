@@ -71,11 +71,18 @@ class TenantIdentification
 
         $tenant = null;
 
-        // 1. 首先尝试通过域名识别租户
+        // 1. 首先尝试通过域名识别租户（支持 api. 子域名前缀匹配）
         if ($domain && $domain !== 'localhost' && $domain !== '127.0.0.1') {
             $tenant = Tenant::where('domain', $domain)
                 ->where('status', true)
                 ->first();
+            
+            if (!$tenant && str_starts_with($domain, 'api.')) {
+                $baseDomain = substr($domain, 4);
+                $tenant = Tenant::where('domain', $baseDomain)
+                    ->where('status', true)
+                    ->first();
+            }
             
             if ($tenant) {
                 Log::info('Tenant identified by domain', [
@@ -156,8 +163,17 @@ class TenantIdentification
             }
         }
 
-        // 如果没有找到租户，返回错误
+        // 如果没有找到租户
         if (!$tenant) {
+            $isV1Api = str_starts_with($request->path(), 'api/v1/');
+            if ($isV1Api) {
+                Log::info('V1 API request without tenant context, allowing passthrough', [
+                    'domain' => $domain,
+                    'path' => $request->path()
+                ]);
+                return $next($request);
+            }
+            
             Log::warning('No tenant found for request', [
                 'domain' => $domain,
                 'headers' => $request->headers->all()

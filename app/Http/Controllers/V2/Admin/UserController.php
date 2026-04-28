@@ -160,6 +160,11 @@ class UserController extends Controller
         $userModel = User::with(['plan:id,name', 'invite_user:id,email', 'group:id,name'])
             ->select(DB::raw('*, (u+d) as total_used'));
 
+        if ($request->has('keyword') && $request->input('keyword') !== '') {
+            $keyword = $request->input('keyword');
+            $userModel->where('email', 'like', "%{$keyword}%");
+        }
+
         $this->applyFiltersAndSorts($request, $userModel);
 
         $users = $userModel->orderBy('id', 'desc')

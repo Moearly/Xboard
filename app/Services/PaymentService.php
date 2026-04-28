@@ -25,10 +25,10 @@ class PaymentService
         }
 
         if ($id) {
-            $payment = Payment::find($id)->toArray();
+            $payment = Payment::withoutGlobalScopes()->find($id)?->toArray();
         }
         if ($uuid) {
-            $payment = Payment::where('uuid', $uuid)->first()->toArray();
+            $payment = Payment::withoutGlobalScopes()->where('uuid', $uuid)->first()?->toArray();
         }
 
         $this->config = [];
@@ -65,12 +65,18 @@ class PaymentService
 
     public function pay($order)
     {
-        // custom notify domain name
         $notifyUrl = url("/api/v1/guest/payment/notify/{$this->method}/{$this->config['uuid']}");
         if ($this->config['notify_domain']) {
             $parseUrl = parse_url($notifyUrl);
             $notifyUrl = $this->config['notify_domain'] . $parseUrl['path'];
         }
+        $notifyUrl = preg_replace('/^http:\/\//', 'https://', $notifyUrl);
+
+        \Illuminate\Support\Facades\Log::info('Payment pay initiated', [
+            'trade_no' => $order['trade_no'],
+            'notify_url' => $notifyUrl,
+            'total_amount' => $order['total_amount'],
+        ]);
 
         return $this->payment->pay([
             'notify_url' => $notifyUrl,
